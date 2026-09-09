@@ -31,10 +31,10 @@ class ReportGenerator:
             c.setFont("Helvetica", 10)
             c.drawString(1.2 * inch, height - 2.1 * inch, f"Manufacturer: {instrument.manufacturer}")
             c.drawString(1.2 * inch, height - 2.3 * inch, f"Model: {instrument.model}")
-            c.drawString(1.2 * inch, height - 2.5 * inch, f"Accuracy Class: {instrument.accuracy_class}")
-            c.drawString(1.2 * inch, height - 2.7 * inch, f"Max Capacity: {instrument.max_capacity}")
-            c.drawString(1.2 * inch, height - 2.9 * inch, f"Min Capacity: {instrument.min_capacity}")
-            c.drawString(1.2 * inch, height - 3.1 * inch, f"Verification Interval (e): {instrument.verification_interval_e}")
+            c.drawString(1.2 * inch, height - 2.5 * inch, f"Accuracy Class: Class {instrument.accuracy_class}")
+            c.drawString(1.2 * inch, height - 2.7 * inch, f"Max Capacity: {instrument.max_capacity} kg")
+            c.drawString(1.2 * inch, height - 2.9 * inch, f"Min Capacity: {instrument.min_capacity} kg")
+            c.drawString(1.2 * inch, height - 3.1 * inch, f"Verification Interval (e): {instrument.verification_interval_e} g")
         
         # Test Results
         c.setFont("Helvetica-Bold", 12)

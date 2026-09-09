@@ -8,7 +8,12 @@ def seed():
     db = SessionLocal()
     try:
         # Check if already seeded
-        if db.query(models.Instrument).first():
+        existing_inst = db.query(models.Instrument).first()
+        if existing_inst:
+            if existing_inst.verification_interval_e < 1.0:
+                existing_inst.verification_interval_e = 10.0
+                db.commit()
+                print("Updated existing instrument verification_interval_e to 10.0g.")
             print("Database already seeded.")
             return
 
@@ -22,7 +27,7 @@ def seed():
             accuracy_class="III",
             min_capacity=0.2,
             max_capacity=30,
-            verification_interval_e=0.01, # 10g in kg
+            verification_interval_e=10.0, # 10g in grams
             number_of_intervals=3000,
             configuration_json={"platform_size": "200x200mm"}
         )
