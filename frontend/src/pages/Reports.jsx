@@ -235,7 +235,7 @@ export default function Reports() {
                 <td style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>R76-1 3.5.1</td>
                 <td style={{ padding: '0.75rem', fontWeight: 600 }}>10.000 kg</td>
                 <td style={{ padding: '0.75rem', fontWeight: 600, color: 'var(--primary-700)' }}>+8.000 g</td>
-                <td style={{ padding: '0.75rem', fontWeight: 600 }}>±20.000 g</td>
+                <td style={{ padding: '0.75rem', fontWeight: 600 }}>±10.000 g</td>
                 <td style={{ padding: '0.75rem' }}><span className="badge badge-pass">PASS</span></td>
               </tr>
             </tbody>

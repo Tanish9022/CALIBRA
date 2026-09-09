@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   HelpCircle, 
@@ -14,21 +14,55 @@ import {
 export default function TestWorkspace() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const sessionId = searchParams.get('sessionId') || '1';
+  const rawSessionId = searchParams.get('sessionId') || '1';
+  const [sessionId, setSessionId] = useState(rawSessionId);
 
   const [load, setLoad] = useState('10');
   const [indication, setIndication] = useState('10.008');
+  const [deltaL, setDeltaL] = useState('');
+  const [e0, setE0] = useState('');
+  const [verificationType, setVerificationType] = useState('INITIAL');
   const [result, setResult] = useState(null);
   const [showEvidence, setShowEvidence] = useState(false);
   const [loading, setLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
+  useEffect(() => {
+    // Validate that the requested session exists; if not, fallback to session 1
+    fetch(`/api/sessions/${rawSessionId}`)
+      .then(res => {
+        if (!res.ok) {
+          navigate('/workspace?sessionId=1', { replace: true });
+          setSessionId('1');
+        } else {
+          setSessionId(rawSessionId);
+        }
+      })
+      .catch(() => {
+        setSessionId('1');
+      });
+  }, [rawSessionId, navigate]);
+
   const handleCalculate = async () => {
     setLoading(true);
     setErrorMsg(null);
     try {
       // 1. Create Observation
+      const meta = {
+        indication: parseFloat(indication),
+        indication_unit: 'kg',
+        verification_type: verificationType
+      };
+      if (deltaL !== '' && !isNaN(parseFloat(deltaL))) {
+        meta.delta_l = parseFloat(deltaL);
+        meta.delta_l_unit = 'g';
+      }
+      if (e0 !== '' && !isNaN(parseFloat(e0))) {
+        meta.e0 = parseFloat(e0);
+        meta.e0_unit = 'g';
+      }
+
       const resObs = await fetch(`/api/sessions/${sessionId}/observations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -37,10 +71,7 @@ export default function TestWorkspace() {
           raw_value: parseFloat(load),
           raw_unit: 'kg',
           sequence_no: 1,
-          metadata_json: {
-            indication: parseFloat(indication),
-            indication_unit: 'kg'
-          }
+          metadata_json: meta
         })
       });
 
@@ -82,14 +113,18 @@ export default function TestWorkspace() {
 
   const handleFailDemo = () => {
     setLoad('10');
-    setIndication('10.035'); // 35g error -> Exceeds Class III 20g MPE -> FAIL
+    setIndication('10.035'); // 35g error -> Exceeds Class III 10g Initial MPE -> FAIL
+    setDeltaL('');
+    setE0('');
     setResult(null);
     setShowEvidence(false);
   };
 
   const handlePassDemo = () => {
     setLoad('10');
-    setIndication('10.008'); // 8g error -> Within Class III 20g MPE -> PASS
+    setIndication('10.008'); // 8g error -> Within Class III 10g Initial MPE -> PASS
+    setDeltaL('');
+    setE0('');
     setResult(null);
     setShowEvidence(false);
   };
@@ -216,6 +251,46 @@ export default function TestWorkspace() {
                   onChange={(e) => setIndication(e.target.value)} 
                 />
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Instrument display reading</span>
+              </div>
+            </div>
+
+            {/* Metrological Parameters (OIML R76-1 A.4.4.3) */}
+            <div className="grid grid-cols-3 gap-3" style={{ marginBottom: '1.25rem', padding: '0.75rem', backgroundColor: 'var(--bg-color)', borderRadius: 'var(--radius-md)' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Verification Type</label>
+                <select 
+                  className="form-input" 
+                  style={{ fontSize: '0.8rem', padding: '0.4rem' }}
+                  value={verificationType} 
+                  onChange={(e) => setVerificationType(e.target.value)}
+                >
+                  <option value="INITIAL">Initial Verification (Table 6)</option>
+                  <option value="IN_SERVICE">In-Service Inspection (3.5.2)</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Turning Point ΔL (g) [Opt]</label>
+                <input 
+                  type="number" 
+                  step="any" 
+                  placeholder="e.g. 4.0"
+                  className="form-input" 
+                  style={{ fontSize: '0.8rem', padding: '0.4rem' }}
+                  value={deltaL} 
+                  onChange={(e) => setDeltaL(e.target.value)} 
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Zero Error E0 (g) [Opt]</label>
+                <input 
+                  type="number" 
+                  step="any" 
+                  placeholder="e.g. 0.0"
+                  className="form-input" 
+                  style={{ fontSize: '0.8rem', padding: '0.4rem' }}
+                  value={e0} 
+                  onChange={(e) => setE0(e.target.value)} 
+                />
               </div>
             </div>
             

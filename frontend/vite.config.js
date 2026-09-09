@@ -5,6 +5,9 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   server: {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate'
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:8000',

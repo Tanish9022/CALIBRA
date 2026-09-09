@@ -4,7 +4,25 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>CALIBRA — OIML R76 Compliance Engine</title>
+    <script>
+      // Clear any service workers or PWA caches left by other projects on this port
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (var reg of registrations) {
+            reg.unregister();
+            console.log('Unregistered stale service worker from prior project on port 5173');
+          }
+        });
+      }
+      if ('caches' in window) {
+        caches.keys().then(function(keys) {
+          for (var key of keys) {
+            caches.delete(key);
+          }
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -14,7 +14,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const [activeCount, setActiveCount] = useState(1);
-  const [sessions] = useState([
+  const [sessions, setSessions] = useState([
     {
       id: 1,
       name: 'Session #1',
@@ -24,28 +24,28 @@ export default function Dashboard() {
       badgeClass: 'badge'
     },
     {
-      id: 1024,
-      name: 'Session #1024',
+      id: 2,
+      name: 'Session #2',
       instrument: 'Mettler Toledo - MS205DU (Class III)',
       status: 'COMPLETED',
       badge: 'PASS',
       badgeClass: 'badge-pass'
     },
     {
-      id: 1025,
-      name: 'Session #1025',
-      instrument: 'Ohaus - Adventurer AX224',
+      id: 3,
+      name: 'Session #3',
+      instrument: 'Mettler Toledo - MS205DU (Class III)',
       status: 'REVIEW',
       badge: 'REVIEW',
       badgeClass: 'badge-review'
     },
     {
-      id: 1026,
-      name: 'Session #1026',
-      instrument: 'Sartorius - Cubis II',
-      status: 'FAILED',
-      badge: 'FAIL',
-      badgeClass: 'badge-fail'
+      id: 4,
+      name: 'Session #4',
+      instrument: 'Mettler Toledo - MS205DU (Class III)',
+      status: 'IN_PROGRESS',
+      badge: 'ACTIVE',
+      badgeClass: 'badge'
     }
   ]);
 
@@ -55,6 +55,23 @@ export default function Dashboard() {
       .then(data => {
         if (data && data.length > 0) {
           setActiveCount(data.length);
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/sessions/')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => {
+        if (data && data.length > 0) {
+          const mapped = data.slice(0, 5).map(s => ({
+            id: s.id,
+            name: `Session #${s.id}`,
+            instrument: `Instrument #${s.instrument_id} (OIML R76)`,
+            status: s.status,
+            badge: s.status === 'COMPLETED' ? 'PASS' : (s.status === 'REVIEW' ? 'REVIEW' : 'ACTIVE'),
+            badgeClass: s.status === 'COMPLETED' ? 'badge-pass' : (s.status === 'REVIEW' ? 'badge-review' : 'badge')
+          }));
+          setSessions(mapped);
         }
       })
       .catch(() => {});
@@ -213,10 +230,10 @@ export default function Dashboard() {
                 borderRadius: 'var(--radius-md)',
                 cursor: 'pointer'
               }}
-              onClick={() => navigate('/workspace?sessionId=1025')}
+              onClick={() => navigate('/workspace?sessionId=3')}
             >
               <div className="flex justify-between items-center">
-                <p style={{ fontWeight: 600, color: 'var(--status-review-text)', margin: 0 }}>Review Required: Session #1025</p>
+                <p style={{ fontWeight: 600, color: 'var(--status-review-text)', margin: 0 }}>Review Required: Session #3</p>
                 <span className="badge badge-review">OIML R76 Warning</span>
               </div>
               <p style={{ fontSize: '0.85rem', color: 'var(--status-review-text)', marginTop: '0.4rem', margin: '0.4rem 0 0 0' }}>
