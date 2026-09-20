@@ -239,3 +239,26 @@ Whenever an OIML clause allows jurisdictional discretion, CALIBRA flags it as re
 - [Testing & Validation Guide](docs/TESTING.md)
 - [Security & Audit Integrity](docs/SECURITY.md)
 - [Deployment Guide](docs/DEPLOYMENT.md)
+
+---
+
+## 12. Regulatory References & Standards Bibliography
+
+CALIBRA is engineered in strict compliance with the following statutory standards, international recommendations, and legal metrology research:
+
+### 12.1 Key International & National Standards
+- **OIML R 76-1:2006 (E):** *Non-automatic weighing instruments — Part 1: Metrological and technical requirements — Tests.* International Organization of Legal Metrology, Paris. [PDF Link](https://www.oiml.org/en/files/pdf_r/r076-1-e06.pdf)
+- **OIML R 76-2:2012 / 2015 (E):** *Non-automatic weighing instruments — Part 2: Test report format.* International Organization of Legal Metrology, Paris. [PDF Link](https://www.oiml.org/en/files/pdf_r/r076-2-e15.pdf)
+- **NMI NITP 6.1–6.4 (2019):** *National Instrument Test Procedures for Non-Automatic Weighing Instruments.* National Measurement Institute (NMI), Department of Industry, Science and Resources, Australian Government. [Documentation Link](https://www.industry.gov.au/sites/default/files/2019-04/nitp_6.1_to_6.4_non-automatic_weighing_instruments.pdf)
+- **The Legal Metrology Act, 2009 (Act No. 1 of 2010) & Legal Metrology (General) Rules, 2011:** *Eighth Schedule: Non-Automatic Weighing Instruments.* Department of Consumer Affairs, Ministry of Consumer Affairs, Food and Public Distribution, Government of India. [The Gazette of India](https://egazette.gov.in/WriteReadData/2009/184623.pdf)
+
+### 12.2 Research Papers & Metrological Case Studies
+- **OIML Remote Testing Laboratory for R76 (2025):** *Framework for Automated Data Capture and Remote Compliance Testing of Weighing Instruments.* OIML Bulletin, Vol. LXVI. [OIML Publication](https://www.oiml.org/en/publications/oiml-bulletin/2025-03/20250302)
+- **OIML Digital Transformation Survey (2024):** *Digital Metrology and Machine-Readable Test Reports in Legal Metrology.* OIML Bulletin, Vol. LXV. [OIML Publication](https://www.oiml.org/en/publications/oiml-bulletin/2025-03/20250307)
+- **Gravity Compensation in NAWI (OIML Guidance):** *Calculation of Gravitational Acceleration Zones and Elevation Gradients in Metrological Verification.* OIML TC 9/SC 1. [OIML Example Reference](https://www.oiml.org/en/files/pdf_c/r076-2006-gb1-2016-12.pdf)
+
+### 12.3 Authoritative Metrology Bodies
+- **OIML** — *International Organization of Legal Metrology* ([www.oiml.org](https://www.oiml.org))
+- **DoCA** — *Department of Consumer Affairs, Government of India* ([consumeraffairs.nic.in](https://consumeraffairs.nic.in))
+- **BIS** — *Bureau of Indian Standards* ([www.bis.gov.in](https://www.bis.gov.in))
+- **NMI Australia** — *National Measurement Institute* ([www.industry.gov.au](https://www.industry.gov.au))
