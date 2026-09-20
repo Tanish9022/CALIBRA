@@ -2,7 +2,6 @@
 
 ## Identity
 **Project:** CALIBRA — Explainable Metrology Compliance Engine  
-**SIH Problem Statement:** SIH26035  
 **Domain:** Legal Metrology / Non-Automatic Weighing Instruments (NAWI)  
 **Primary standard:** OIML R76  
 **Primary output:** evidence-backed standardized test report
@@ -14,7 +13,7 @@ Instrument profile → applicable test plan → observations → validation → 
 The differentiator is the compliance engine, not PDF generation.
 
 ## Problem
-SIH26035 describes the current NAWI test-report workflow as largely spreadsheet/document-template based and identifies it as time-consuming, prone to calculation errors and lacking uniformity. The requested software includes test-data recording, validation, calculations, automatic compliance determination, standardized reporting, storage, search/dashboard capabilities and role-based access.
+Traditional NAWI test-report workflows are largely spreadsheet/document-template based, which is time-consuming, prone to calculation errors, and lacking nationwide uniformity. CALIBRA replaces this with automated test-data recording, validation, arbitrary-precision calculations, automatic compliance determination, standardized reporting, storage, search/dashboard capabilities, and role-based access.
 
 ## Goals
 

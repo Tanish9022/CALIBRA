@@ -384,29 +384,55 @@ def run_tests():
         # Run CALIBRA
         calibra_res = {}
         try:
-            # 1. Normalization & calculation
+            max_val = tc.get("max")
+            max_u = tc.get("max_u", "kg")
+            min_val = tc.get("min")
+            min_u = tc.get("min_u", "kg")
+
             trace = CalculationEngine.process_observation(
                 raw_load=tc["load"],
                 load_unit=tc["load_u"],
                 raw_indication=tc["ind"],
                 ind_unit=tc["ind_u"],
+                raw_e=tc["e"],
+                e_unit=tc.get("e_u", "g"),
+                raw_delta_l=tc.get("delta_l"),
+                delta_l_unit=tc.get("delta_l_u", "g") if tc.get("delta_l") is not None else None,
+                raw_e0=tc.get("e0"),
+                e0_unit=tc.get("e0_u", "g") if tc.get("e0") is not None else None,
                 base_unit="g"
             )
-            err = trace["calculation"]["error"]
-            norm_load = trace["normalization"]["load"]["normalized"]
-            
+
+            err = trace["_internal_decimals"]["corrected_error"]
+            norm_load = trace["_internal_decimals"]["norm_load"]
+            norm_e = trace["_internal_decimals"]["norm_e"]
+
+            max_norm = CalculationEngine.normalize(max_val, max_u, "g") if max_val is not None else None
+            min_norm = CalculationEngine.normalize(min_val, min_u, "g") if min_val is not None else None
+
             # Rule evaluation
             eval_res = RuleEngine.evaluate_mpe_rule(
                 accuracy_class=tc["acc_class"],
-                load=norm_load,
-                e=tc["e"], # assumes e is in g
-                error=err
+                load_norm=norm_load,
+                e_norm=norm_e,
+                error_norm=err,
+                max_norm=max_norm,
+                min_norm=min_norm,
+                verification_type="IN_SERVICE" if tc.get("in_service") else "INITIAL"
             )
-            
-            if "error" in eval_res:
+
+            status = eval_res.get("status")
+            if status == "INVALID":
+                calibra_res = {
+                    "status": "INVALID",
+                    "error_val": float(err) if err is not None else None,
+                    "mpe": None,
+                    "reason": eval_res.get("error", "Invalid")
+                }
+            elif "error" in eval_res:
                 calibra_res = {
                     "status": "ERROR",
-                    "error_val": err,
+                    "error_val": float(err) if err is not None else None,
                     "mpe": None,
                     "reason": eval_res["error"]
                 }
@@ -414,7 +440,7 @@ def run_tests():
                 passed = eval_res["evaluation"]["passed"]
                 calibra_res = {
                     "status": "PASS" if passed else "FAIL",
-                    "error_val": err,
+                    "error_val": float(err),
                     "mpe": eval_res["threshold"],
                     "reason": "Evaluated"
                 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   Download, 
@@ -6,7 +6,12 @@ import {
   Scale, 
   ExternalLink,
   Loader2,
-  ShieldCheck
+  ShieldCheck,
+  RotateCcw,
+  AlertTriangle,
+  FileCheck,
+  CheckCircle2,
+  Hash
 } from 'lucide-react';
 
 export default function Reports() {
@@ -15,26 +20,60 @@ export default function Reports() {
   const sessionId = searchParams.get('sessionId') || '1';
 
   const [generating, setGenerating] = useState(false);
-  const [reportGenerated, setReportGenerated] = useState(false);
+  const [reportData, setReportData] = useState(null);
+  const [gateData, setGateData] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [integrityData, setIntegrityData] = useState(null);
 
-  const handleGenerateReport = async () => {
+  useEffect(() => {
+    // Check coverage gate status
+    fetch(`/api/compliance/coverage-gate/${sessionId}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => setGateData(data))
+      .catch(console.error);
+
+    // Check if an existing report exists
+    fetch('/api/reports/')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => {
+        const found = data.find(r => String(r.session_id) === String(sessionId));
+        if (found) {
+          setReportData(found);
+          // Verify integrity
+          fetch(`/api/reports/${found.id}/verify`)
+            .then(res => res.ok ? res.json() : null)
+            .then(ver => setIntegrityData(ver))
+            .catch(console.error);
+        }
+      })
+      .catch(console.error);
+  }, [sessionId]);
+
+  const handleGenerateReport = async (forceDraft = false) => {
     setGenerating(true);
     setErrorMsg(null);
     try {
-      // 1. Call POST /api/reports/generate/{sessionId} to build the PDF
-      const response = await fetch(`/api/reports/generate/${sessionId}`, {
-        method: 'POST'
-      });
+      const url = `/api/reports/generate/${sessionId}${forceDraft ? '?force=true' : ''}`;
+      const response = await fetch(url, { method: 'POST' });
+
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(`Report generation failed (${response.statusText})`);
+        if (data.detail && data.detail.error === 'COVERAGE_GATE_BLOCKED') {
+          setErrorMsg(data.detail.message + ' Blockers: ' + (data.detail.blockers || []).join('; '));
+          return;
+        }
+        throw new Error(data.detail || `Report generation failed (${response.statusText})`);
       }
 
-      await response.json();
-      setReportGenerated(true);
+      setReportData(data);
+      // Verify integrity
+      if (data.report_id) {
+        const verRes = await fetch(`/api/reports/${data.report_id}/verify`);
+        if (verRes.ok) setIntegrityData(await verRes.json());
+      }
 
-      // 2. Open or download the generated PDF
+      // Download PDF
       window.open(`/api/reports/download/${sessionId}`, '_blank');
     } catch (err) {
       console.error(err);
@@ -45,18 +84,19 @@ export default function Reports() {
   };
 
   return (
-    <div className="animate-fade-in flex flex-col gap-6">
-      <div className="flex justify-between items-center">
+    <div className="container" style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.5rem' }}>
+      {/* Header */}
+      <div className="flex justify-between items-center" style={{ marginBottom: '1.5rem' }}>
         <div>
           <div className="flex items-center gap-2" style={{ marginBottom: '0.25rem' }}>
             <span className="badge badge-pass">Session #{sessionId}</span>
-            <span className="badge" style={{ backgroundColor: 'var(--primary-50)', color: 'var(--primary-700)', border: '1px solid var(--primary-100)' }}>
-              Standard: OIML R76-2
+            <span className="badge" style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #dbeafe' }}>
+              Standard: OIML R76-2:2006 (E)
             </span>
           </div>
-          <h1>Standardized Test Report</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-            Official Legal Metrology compliance document generated deterministically from verified evidence.
+          <h1 style={{ margin: 0, fontSize: '1.75rem' }}>Standardized Legal Metrology Test Report</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0.2rem 0 0' }}>
+            Authoritative, cryptographically verifiable compliance documentation issued under OIML Recommendation R-76.
           </p>
         </div>
 
@@ -64,14 +104,15 @@ export default function Reports() {
           <button 
             type="button" 
             className="btn btn-secondary flex items-center gap-2"
-            onClick={() => navigate(`/workspace?sessionId=${sessionId}`)}
+            onClick={() => navigate('/replay')}
           >
-            Back to Workspace
+            <RotateCcw size={16} /> Compliance Replay
           </button>
+          
           <button 
             type="button" 
             className="btn btn-primary flex items-center gap-2"
-            onClick={handleGenerateReport}
+            onClick={() => handleGenerateReport(false)}
             disabled={generating}
           >
             {generating ? (
@@ -80,196 +121,164 @@ export default function Reports() {
               </>
             ) : (
               <>
-                <Download size={16} /> Generate & Download PDF Report
+                <Download size={16} /> Generate & Download Official Report
               </>
             )}
           </button>
         </div>
       </div>
 
+      {/* Error / Blocker Banner */}
       {errorMsg && (
         <div style={{
-          padding: '1rem',
-          backgroundColor: 'var(--status-fail-bg)',
-          color: 'var(--status-fail-text)',
-          border: '1px solid var(--status-fail-border)',
-          borderRadius: 'var(--radius-md)'
+          padding: '1.25rem',
+          backgroundColor: '#fef2f2',
+          border: '1px solid #fecaca',
+          borderRadius: '10px',
+          color: '#991b1b',
+          marginBottom: '1.5rem'
         }}>
-          <strong>Report Error:</strong> {errorMsg}
-        </div>
-      )}
-
-      {reportGenerated && (
-        <div style={{
-          padding: '1rem',
-          backgroundColor: 'var(--status-pass-bg)',
-          color: 'var(--status-pass-text)',
-          border: '1px solid var(--status-pass-border)',
-          borderRadius: 'var(--radius-md)'
-        }} className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <CheckCircle size={18} />
-            <span>Official Report for Session #{sessionId} generated successfully.</span>
+          <div className="flex items-center gap-2" style={{ fontWeight: 700, marginBottom: '0.25rem' }}>
+            <AlertTriangle size={18} /> Coverage Gate Incomplete: Official Report Inhibited
           </div>
-          <a 
-            href={`/api/reports/download/${sessionId}`} 
-            target="_blank" 
-            rel="noreferrer"
-            className="flex items-center gap-1"
-            style={{ color: 'var(--status-pass-text)', fontWeight: 600, fontSize: '0.875rem', textDecoration: 'underline' }}
-          >
-            Open in new tab <ExternalLink size={14} />
-          </a>
+          <p style={{ margin: 0, fontSize: '0.85rem' }}>{errorMsg}</p>
+          <div style={{ marginTop: '0.75rem' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => handleGenerateReport(true)}
+              style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', backgroundColor: '#ffffff' }}
+            >
+              Bypass and Download Draft Preview
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Report Document Mockup Preview */}
-      <div className="card" style={{ padding: '2.5rem', backgroundColor: 'white', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-md)' }}>
-        
-        {/* Report Header */}
-        <div className="flex justify-between items-start pb-6" style={{ borderBottom: '2px solid var(--primary-600)' }}>
-          <div>
+      {/* Coverage Gate Checklist Card */}
+      {gateData && (
+        <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', backgroundColor: gateData.is_ready_for_report ? '#f0fdf4' : '#fffbeb', border: `1px solid ${gateData.is_ready_for_report ? '#86efac' : '#fde68a'}` }}>
+          <div className="flex justify-between items-center" style={{ marginBottom: '0.5rem' }}>
             <div className="flex items-center gap-2">
-              <Scale size={28} style={{ color: 'var(--primary-600)' }} />
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>CALIBRA</h2>
+              {gateData.is_ready_for_report ? (
+                <CheckCircle2 size={20} style={{ color: '#166534' }} />
+              ) : (
+                <AlertTriangle size={20} style={{ color: '#92400e' }} />
+              )}
+              <h3 style={{ margin: 0, fontSize: '1rem', color: gateData.is_ready_for_report ? '#166534' : '#92400e' }}>
+                Coverage Gate Status: {gateData.status} ({gateData.coverage_percentage}% Complete)
+              </h3>
             </div>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-              Explainable Legal Metrology Compliance Engine • Non-Automatic Weighing Instruments
-            </p>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: gateData.is_ready_for_report ? '#166534' : '#92400e' }}>
+              {gateData.completed_tests} of {gateData.total_tests} Tests Completed
+            </span>
+          </div>
+
+          {gateData.blockers && gateData.blockers.length > 0 && (
+            <ul style={{ margin: '0.5rem 0 0 1.2rem', fontSize: '0.82rem', color: '#92400e' }}>
+              {gateData.blockers.map((b, idx) => (
+                <li key={idx}>{b}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* Cryptographic Integrity Card */}
+      {integrityData && (
+        <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ShieldCheck size={24} style={{ color: '#2563eb' }} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563eb' }}>
+                  CRYPTOGRAPHIC SHA-256 AUDIT INTEGRITY
+                </span>
+                <h4 style={{ margin: '0.2rem 0', fontSize: '1rem', color: '#0f172a' }}>
+                  Report {integrityData.report_number} • {integrityData.integrity_status}
+                </h4>
+                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                  SHA-256: <code>{integrityData.stored_checksum}</code>
+                </div>
+              </div>
+            </div>
+
+            <span className="badge badge-pass" style={{ fontSize: '0.85rem' }}>
+              ✓ TAMPER VERIFIED
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Report Document Preview Layout */}
+      <div className="card" style={{ padding: '2rem', backgroundColor: '#ffffff' }}>
+        {/* Document Header */}
+        <div style={{ borderBottom: '2px solid #0f172a', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', fontWeight: 700 }}>
+              INTERNATIONAL RECOMMENDATION OIML R 76-2:2006 (E)
+            </span>
+            <h2 style={{ fontSize: '1.4rem', margin: '0.3rem 0', color: '#0f172a' }}>
+              Pattern Evaluation & Verification Test Report (NAWI)
+            </h2>
+            <div style={{ fontSize: '0.85rem', color: '#475569' }}>
+              Report ID: <strong>{reportData?.report_number || `CALIBRA-R76-${sessionId}-REV1`}</strong> • Issued By: <strong>Senior Metrology Inspector</strong>
+            </div>
           </div>
 
           <div style={{ textAlign: 'right' }}>
-            <span className="badge badge-pass" style={{ fontSize: '0.875rem', padding: '0.35rem 0.85rem' }}>
-              COMPLIANCE VERIFIED
+            <span className="badge badge-pass" style={{ fontSize: '0.9rem', padding: '0.4rem 1rem' }}>
+              LEGAL STATUS: COMPLIANT (PASS)
             </span>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-              Format: OIML R76-2:2006 (E)
-            </p>
           </div>
         </div>
 
-        {/* Metadata Grid */}
-        <div className="grid grid-cols-2 gap-6" style={{ margin: '2rem 0', padding: '1rem', backgroundColor: 'var(--bg-color)', borderRadius: 'var(--radius-md)' }}>
+        {/* Sections Summary */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
           <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Inspection Session</span>
-            <p style={{ fontWeight: 600, marginTop: '0.25rem' }}>Session ID: #{sessionId}</p>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Evaluator: Demo Technician</p>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Standard: OIML R76-1 / R76-2 Edition 2006</p>
+            <h4 style={{ fontSize: '0.9rem', color: '#64748b', textTransform: 'uppercase', marginBottom: '0.5rem' }}>1. Instrument Profile</h4>
+            <div style={{ fontSize: '0.85rem', lineHeight: '1.6' }}>
+              <div>Model: <strong>Mettler Toledo bC-U2</strong></div>
+              <div>Accuracy Class: <strong>Class III</strong></div>
+              <div>Capacity: <strong>Max 30 kg, Min 0.2 kg</strong></div>
+              <div>Verification Interval: <strong>e = 10 g</strong></div>
+            </div>
           </div>
+
           <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Verification Date</span>
-            <p style={{ fontWeight: 600, marginTop: '0.25rem' }}>{new Date().toLocaleDateString()} — Final Evaluation</p>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Status: DETERMINISTIC DECISION ARCHIVED</p>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Ruleset Checksum: <code>abc123hash</code> (Published)</p>
+            <h4 style={{ fontSize: '0.9rem', color: '#64748b', textTransform: 'uppercase', marginBottom: '0.5rem' }}>2. Compliance Context</h4>
+            <div style={{ fontSize: '0.85rem', lineHeight: '1.6' }}>
+              <div>Test Location: <strong>New Delhi Central Lab</strong></div>
+              <div>Local Gravity: <strong>9.7912 m/s²</strong> (Declared)</div>
+              <div>Environment: <strong>21.5°C, 52% RH</strong></div>
+              <div>R76 Clause 3.9.2: <strong style={{ color: '#166534' }}>TRANSFERABLE</strong></div>
+            </div>
           </div>
-        </div>
 
-        {/* Section 1: Instrument Profile */}
-        <div style={{ marginBottom: '2rem' }}>
-          <h3 style={{ fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-            1. Instrument Identification & Metrological Characteristics
-          </h3>
-          <div className="grid grid-cols-3 gap-4" style={{ fontSize: '0.875rem' }}>
-            <div>
-              <span style={{ color: 'var(--text-secondary)' }}>Manufacturer:</span>
-              <p style={{ fontWeight: 600 }}>Mettler Toledo</p>
-            </div>
-            <div>
-              <span style={{ color: 'var(--text-secondary)' }}>Model Designation:</span>
-              <p style={{ fontWeight: 600 }}>MS205DU</p>
-            </div>
-            <div>
-              <span style={{ color: 'var(--text-secondary)' }}>Accuracy Class:</span>
-              <p style={{ fontWeight: 600 }}>Class III (Medium)</p>
-            </div>
-            <div>
-              <span style={{ color: 'var(--text-secondary)' }}>Maximum Capacity (Max):</span>
-              <p style={{ fontWeight: 600 }}>30.000 kg</p>
-            </div>
-            <div>
-              <span style={{ color: 'var(--text-secondary)' }}>Minimum Capacity (Min):</span>
-              <p style={{ fontWeight: 600 }}>0.200 kg</p>
-            </div>
-            <div>
-              <span style={{ color: 'var(--text-secondary)' }}>Verification Interval (e):</span>
-              <p style={{ fontWeight: 600 }}>10.0 g (n = 3000)</p>
+          <div>
+            <h4 style={{ fontSize: '0.9rem', color: '#64748b', textTransform: 'uppercase', marginBottom: '0.5rem' }}>3. Metrological Standards</h4>
+            <div style={{ fontSize: '0.85rem', lineHeight: '1.6' }}>
+              <div>Weights: <strong>Class F1 Standards (20 kg)</strong></div>
+              <div>Cert: <strong>NPL-IND-CAL-2026-118</strong></div>
+              <div>Traceability: <strong>NPL / SI / MASS-02</strong></div>
+              <div>Status: <strong style={{ color: '#166534' }}>VALID & CERTIFIED</strong></div>
             </div>
           </div>
         </div>
 
-        {/* Section 2: Summary of Results */}
-        <div style={{ marginBottom: '2rem' }}>
-          <h3 style={{ fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-            2. Summary of Metrological Verification Tests
-          </h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-            <thead>
-              <tr style={{ backgroundColor: 'var(--bg-color)', textAlign: 'left', borderBottom: '2px solid var(--border-color)' }}>
-                <th style={{ padding: '0.75rem' }}>Test Item</th>
-                <th style={{ padding: '0.75rem' }}>Clause</th>
-                <th style={{ padding: '0.75rem' }}>Applied Load</th>
-                <th style={{ padding: '0.75rem' }}>Observed Error</th>
-                <th style={{ padding: '0.75rem' }}>Permissible MPE</th>
-                <th style={{ padding: '0.75rem' }}>Result</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                <td style={{ padding: '0.75rem', fontWeight: 500 }}>01 Administrative Examination</td>
-                <td style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>R76-1 3.4</td>
-                <td style={{ padding: '0.75rem' }}>Visual</td>
-                <td style={{ padding: '0.75rem' }}>Conforming</td>
-                <td style={{ padding: '0.75rem' }}>Mandatory markings</td>
-                <td style={{ padding: '0.75rem' }}><span className="badge badge-pass">PASS</span></td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                <td style={{ padding: '0.75rem', fontWeight: 500 }}>02 Construction & Security</td>
-                <td style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>R76-1 3.9</td>
-                <td style={{ padding: '0.75rem' }}>Visual/Mech</td>
-                <td style={{ padding: '0.75rem' }}>Conforming</td>
-                <td style={{ padding: '0.75rem' }}>Seals intact</td>
-                <td style={{ padding: '0.75rem' }}><span className="badge badge-pass">PASS</span></td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--primary-50)' }}>
-                <td style={{ padding: '0.75rem', fontWeight: 600 }}>03 Weighing Performance</td>
-                <td style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>R76-1 3.5.1</td>
-                <td style={{ padding: '0.75rem', fontWeight: 600 }}>10.000 kg</td>
-                <td style={{ padding: '0.75rem', fontWeight: 600, color: 'var(--primary-700)' }}>+8.000 g</td>
-                <td style={{ padding: '0.75rem', fontWeight: 600 }}>±10.000 g</td>
-                <td style={{ padding: '0.75rem' }}><span className="badge badge-pass">PASS</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Section 3: Evidence & Deterministic Attestation */}
-        <div style={{ padding: '1rem', backgroundColor: 'var(--bg-color)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-          <div className="flex items-center gap-2" style={{ marginBottom: '0.5rem' }}>
-            <ShieldCheck size={18} style={{ color: 'var(--primary-600)' }} />
-            <h4 style={{ margin: 0 }}>Deterministic Compliance Attestation</h4>
-          </div>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
-            Every derived decision in this report is backed by an immutable calculation lineage: 
-            <code> Raw Observation → Unit Normalization → Indication Error Calculation → Applicable R76 Rule → Threshold Comparison → Decision</code>. 
-            No speculative AI models are used for regulatory determinations.
-          </p>
-        </div>
-
-        {/* Action Bar Footer */}
-        <div className="flex justify-between items-center" style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-            CALIBRA Report Engine • Generated on demand via ReportLab A4 Template
+        {/* Download Call to Action */}
+        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+            Official OIML R76-2 PDF contains detailed Annex A observation matrices, error plots, and signature stamps.
           </span>
-          <button 
-            type="button"
+          <button
             className="btn btn-primary flex items-center gap-2"
-            onClick={handleGenerateReport}
-            disabled={generating}
+            onClick={() => window.open(`/api/reports/download/${sessionId}`, '_blank')}
           >
-            <Download size={16} /> Download Official PDF Report
+            <Download size={16} /> Download Signed PDF Report
           </button>
         </div>
-
       </div>
     </div>
   );

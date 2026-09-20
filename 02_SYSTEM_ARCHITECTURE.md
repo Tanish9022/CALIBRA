@@ -125,4 +125,4 @@ CALIBRA CORE
   |
   +-- Jurisdiction overlays
 ```
-*The SIH MVP should implement only the R76 scope that has been validated.*
+*The current CALIBRA implementation focuses strictly on the validated OIML R-76 scope.*

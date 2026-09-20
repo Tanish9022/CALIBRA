@@ -1,53 +1,36 @@
-# CALIBRA - Mock Demo Script
+# CALIBRA - Operational Walkthrough Script
 
-This document provides a narrative script to accompany a live demo of the CALIBRA MVP prototype.
+This document provides a guided walkthrough of CALIBRA as an explainable Legal Metrology compliance engine for Non-Automatic Weighing Instruments (NAWI) per OIML Recommendation R-76.
+
+For the comprehensive technical operational guide, see [docs/OPERATIONAL_GUIDE.md](file:///c:/Users/tanish/OneDrive/Tài liệu/Desktop/oiml/docs/OPERATIONAL_GUIDE.md).
 
 ## Setup
-Before starting the demo:
-1. Run `docker-compose up -d --build` (or start `uvicorn` and `npm run dev` manually).
-2. Open `http://localhost:5175` in your browser.
-3. Keep the browser Developer Tools (F12) closed for a clean presentation, unless you want to show the JSON trace.
+1. Start the backend: `python -m uvicorn main:app --reload --port 8000` (from `backend/`).
+2. Start the frontend: `npm run dev` (from `frontend/`).
+3. Open `http://localhost:5174` in your browser.
 
-## The Pitch
-> "Hello! Today we are showing CALIBRA, an explainable Legal Metrology compliance engine built to solve SIH26035. Unlike traditional systems that just print pass/fail PDFs, CALIBRA executes compliance rules deterministically and generates an immutable, explainable evidence chain for every single calculation."
-
-## Step 1: The Dashboard
+## Step 1: The Metrology Dashboard
 *(Start on the Dashboard)*
-> "This is the CALIBRA Dashboard. We have a 'Sleek Dark Mode' theme tailored for a laboratory environment. The dashboard gives us an overview of active test sessions. Let's start a new test."
+- The CALIBRA Dashboard displays live verification statistics across profiled instruments, test sessions, and issued certificates.
+- The Metrological Operations Hub provides direct access to every core engine.
 
-## Step 2: Instrument Profile (The 'Given')
-*(Click on 'Instruments' in the sidebar)*
-> "To test an instrument, we first define its profile. Here we have a Class III Non-Automatic Weighing Instrument (NAWI) with a max capacity of 30 kg and a verification interval of 10g."
-> 
-> *(Click 'Validate Profile & Generate Test Plan')*
-> 
-> "When we click validate, CALIBRA dynamically generates a Test Session on the backend, customized specifically to this instrument's class and capacity based on OIML R76 rules."
+## Step 2: Instrument Profile & Test Plan Compilation
+*(Navigate to Instruments)*
+- Profiles Class I, II, III, and IIII weighing instruments.
+- Dynamically compiles tailored test plans based on instrument capacity, verification intervals, and tare capabilities per OIML R76.
 
-## Step 3: Test Workspace & Passing Scenario
-*(You are now in the Test Workspace)*
-> "The technician is now conducting the Weighing Performance test. Let's say they place a 10 kg reference load on the scale."
-> 
-> *(Ensure Reference Load is `10` and Indication is `10.008`)*
-> 
-> *(Click 'Validate & Calculate')*
-> 
-> "The engine calculates an error of +8g. The applicable Maximum Permissible Error (MPE) for a 10kg load on this Class III instrument is ±10g. So we get a clear PASS."
+## Step 3: Test Workspace & Deterministic Evaluation
+*(Navigate to Test Workspace)*
+- Enter raw observations ($L, I, \Delta L, E_0$).
+- Executes turning point derivation ($P = I + 0.5e - \Delta L$) and zero error correction ($E_c = E - E_0$).
+- Click "WHY?" to inspect the step-by-step mathematical proof against OIML Table 6 Maximum Permissible Errors.
 
-## Step 4: The Explainability Engine ("WHY?")
-> "But here is the real magic of CALIBRA. How did the software decide it was a PASS? If an auditor asks, we must prove it."
-> 
-> *(Click the 'WHY?' button)*
-> 
-> "CALIBRA generates an Evidence Chain. It preserves the exact raw inputs, the exact formula used to calculate the error, the specific R76 rule that was applied, and the final deterministic logic decision. This entire trace is serialized and stored immutably."
+## Step 4: Geographical Gravity Screening & Transferability
+*(Navigate to Gravity Hub)*
+- Evaluates Somigliana 1980 WGS84 theoretical gravity and elevation lapse rates.
+- Evaluates OIML R76-1 Clause 3.9.2 transferability (e.g. New Delhi to Leh Ladakh) and automatic internal calibration exemptions.
 
-## Step 5: Failing Scenario
-> "What happens if it fails?"
-> 
-> *(Click 'Load Failing Demo Data', Indication becomes `10.012`)*
-> *(Click 'Validate & Calculate')*
-> 
-> "The error is now +12g. The system instantly flags a FAIL because 12g > 10g threshold. The evidence chain is updated to reflect this failure precisely."
-
-## Step 6: Automated Testing 
-*(If showing the backend/automation)*
-> "Because the compliance engine is entirely API-driven, it can be tested completely automatically. We have a Playwright End-to-End suite that can simulate this entire demo flow headlessly to guarantee the compliance rules are behaving exactly as expected before every deployment."
+## Step 5: Reports & Compliance Replay
+*(Navigate to Reports & Compliance Replay)*
+- Issues tamper-resistant OIML R76-2 certificates with embedded SHA-256 hashes.
+- Audits historical reasoning lineage with zero drift.

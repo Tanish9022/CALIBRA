@@ -7,8 +7,72 @@ import models
 from engine.calculation import CalculationEngine
 from engine.rules import RuleEngine
 from engine.evidence import EvidenceBuilder
+from engine.coverage_gate import CoverageGate
+from engine.test_plan_service import TestPlanService
 
 router = APIRouter(prefix="/compliance", tags=["compliance"])
+
+@router.get("/coverage-gate/{session_id}")
+def check_coverage_gate(session_id: int, db: Session = Depends(get_db)):
+    """
+    Evaluates metrological coverage gate for a test session.
+    Checks required tests, load points, repeat counts, and equipment validity.
+    """
+    session = db.query(models.TestSession).filter(models.TestSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    inst = session.instrument
+    # Generate applicable test plan
+    test_plan = TestPlanService.compile_test_plan(
+        accuracy_class=inst.accuracy_class,
+        max_capacity_kg=inst.max_capacity,
+        verification_interval_e_g=inst.verification_interval_e,
+        verification_type=session.verification_type
+    )
+
+    results = db.query(models.TestResult).filter(models.TestResult.test_session_id == session_id).all()
+    observations = db.query(models.Observation).filter(models.Observation.test_session_id == session_id).all()
+    equipment = db.query(models.TestEquipment).all()
+
+    gate_eval = CoverageGate.evaluate_session_coverage(
+        test_plan=test_plan,
+        results=results,
+        observations=observations,
+        equipment_list=equipment
+    )
+
+    return gate_eval
+
+@router.get("/explain/{evidence_id}")
+def get_explainability_trace(evidence_id: int, db: Session = Depends(get_db)):
+    """
+    Returns the complete step-by-step mathematical derivation and rule citation
+    for the "WHY DID THIS PASS/FAIL?" explainability drawer.
+    """
+    ev = db.query(models.Evidence).filter(models.Evidence.id == evidence_id).first()
+    if not ev:
+        raise HTTPException(status_code=404, detail="Evidence not found")
+
+    result = db.query(models.TestResult).filter(models.TestResult.evidence_id == evidence_id).first()
+
+    raw_in = ev.input_snapshot_json or {}
+    norm_in = ev.normalization_json or {}
+    calc = ev.calculation_trace_json or {}
+    rule = ev.rule_snapshot_json or {}
+    dec = ev.decision_snapshot_json or {}
+
+    return {
+        "evidence_id": ev.id,
+        "status": dec.get("status", result.status if result else "UNKNOWN"),
+        "explanation": dec.get("explanation", result.decision_reason if result else "N/A"),
+        "raw_inputs": raw_in,
+        "normalized_inputs": norm_in,
+        "calculation_trace": calc,
+        "rule_evaluated": rule,
+        "decision": dec,
+        "timestamp": ev.created_at
+    }
 
 @router.post("/evaluate_weighing/{observation_id}")
 def evaluate_weighing_observation(observation_id: int, db: Session = Depends(get_db)):
@@ -30,7 +94,7 @@ def evaluate_weighing_observation(observation_id: int, db: Session = Depends(get
     delta_l_unit = meta.get("delta_l_unit", obs.raw_unit) if delta_l is not None else None
     e0 = meta.get("e0")
     e0_unit = meta.get("e0_unit", obs.raw_unit) if e0 is not None else None
-    verification_type = meta.get("verification_type", "INITIAL")
+    verification_type = meta.get("verification_type", session.verification_type or "INITIAL")
 
     # Instrument parameter unit resolution
     config = instrument.configuration_json or {}
@@ -82,7 +146,7 @@ def evaluate_weighing_observation(observation_id: int, db: Session = Depends(get
             "error": str(ex),
             "evaluation": {"passed": False, "requires_review": True, "error_code": "CALCULATION_OR_VALIDATION_ERROR"}
         }
-        trace = {"calculation": {"error": 0.0, "unit": "g"}, "normalization": {}}
+        clean_trace = {"calculation": {"error": 0.0, "unit": "g"}, "normalization": {}}
 
     # 3. Evidence Generation
     evidence_data = EvidenceBuilder.build_evidence(
@@ -141,8 +205,6 @@ def evaluate_repeatability(session_id: int, db: Session = Depends(get_db)):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
         
-    # Query all repeatability observations for this session
-    # (Assuming test definition code RP-01)
     repeatability_def = db.query(models.TestDefinition).filter(models.TestDefinition.code == "RP-01").first()
     if not repeatability_def:
         return {
@@ -177,6 +239,6 @@ def evaluate_repeatability(session_id: int, db: Session = Depends(get_db)):
         load_in_g=load_g,
         e_in_g=e_g,
         observations_in_g=inds_g,
-        verification_type="INITIAL"
+        verification_type=session.verification_type or "INITIAL"
     )
     return res
