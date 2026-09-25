@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "timestamp": "2026-09-25T13:01:22.171378",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 154 Stepping 4, GenuineIntel",
+    "python_version": "3.12.10",
+    "quick_mode": false
+  },
+  "benchmarks": [
+    {
+      "id": "somigliana_gravity",
+      "benchmark": "Somigliana WGS84 Gravity Calculation",
+      "standard": "International Gravity Formula (1980) / WGS84 Ellipsoid",
+      "iterations": 100000,
+      "total_time_s": 0.3384,
+      "ops_per_sec": 295501.38,
+      "mean_latency_us": 3.234,
+      "p50_latency_us": 2.8,
+      "p95_latency_us": 5.2,
+      "p99_latency_us": 6.6,
+      "unit": "ops/s"
+    },
+    {
+      "id": "decimal_metrology_core",
+      "benchmark": "Decimal Metrology Core (P, Ec, MPE)",
+      "standard": "Arbitrary-Precision Decimal (34 digits) / OIML R76 Table 6",
+      "iterations": 100000,
+      "total_time_s": 0.2364,
+      "ops_per_sec": 422954.95,
+      "mean_latency_us": 2.2,
+      "p50_latency_us": 1.9,
+      "p95_latency_us": 3.4,
+      "p99_latency_us": 5.0,
+      "unit": "eval/s"
+    },
+    {
+      "id": "clause_392_transferability",
+      "benchmark": "Clause 3.9.2 Location Transferability",
+      "standard": "OIML R76-1:2006 Clause 3.9.2 Zone of Intended Use",
+      "iterations": 25000,
+      "total_time_s": 0.3487,
+      "ops_per_sec": 71691.8,
+      "mean_latency_us": 13.686,
+      "p50_latency_us": 10.9,
+      "p95_latency_us": 26.8,
+      "p99_latency_us": 65.0,
+      "unit": "eval/s"
+    },
+    {
+      "id": "dynamic_test_plan_compiler",
+      "benchmark": "Dynamic OIML Test Plan Compiler",
+      "standard": "OIML R76-1:2006 Dynamic Test Matrix (Classes I-IIII)",
+      "iterations": 2000,
+      "total_time_s": 0.0102,
+      "ops_per_sec": 195817.34,
+      "mean_latency_ms": 0.0045,
+      "p50_latency_ms": 0.0037,
+      "p95_latency_ms": 0.0094,
+      "p99_latency_ms": 0.0115,
+      "unit": "plans/s"
+    },
+    {
+      "id": "coverage_gate_verification",
+      "benchmark": "Coverage Gate Verification",
+      "standard": "Multi-Point Distribution Gate / Audit Enforcer",
+      "iterations": 5000,
+      "total_time_s": 0.027,
+      "ops_per_sec": 185135.82,
+      "mean_latency_us": 5.131,
+      "p50_latency_us": 4.5,
+      "p95_latency_us": 8.1,
+      "p99_latency_us": 11.9,
+      "unit": "checks/s"
+    },
+    {
+      "id": "cryptographic_sha256_hashing",
+      "benchmark": "Cryptographic SHA-256 Hashing",
+      "standard": "FIPS 180-4 SHA-256 Tamper Protection (128 KB payload)",
+      "iterations": 10000,
+      "total_time_s": 1.2512,
+      "ops_per_sec": 7992.54,
+      "mb_per_sec": 987.8,
+      "mean_latency_us": 124.804,
+      "p50_latency_us": 108.9,
+      "p95_latency_us": 174.9,
+      "p99_latency_us": 261.5,
+      "unit": "reports/s"
+    }
+  ]
+}

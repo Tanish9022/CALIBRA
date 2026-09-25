@@ -144,20 +144,23 @@ Open browser at: `http://localhost:5174/`
 
 ## 5. Automated Verification & Benchmark Commands
 
-Execute from the `backend/` directory:
+Execute from repository root or `backend/`:
 
 ```bash
 # 1. Run Complete Metrological Performance Benchmark Suite
-python tests/benchmark_performance.py
+python benchmarks/run_benchmarks.py
 
-# 2. Run 34 Golden Test Cases (Independent Differential Oracle)
-python tests/golden_test_suite.py
+# 2. Quick Benchmark Run (10,000 iterations per engine)
+python benchmarks/run_benchmarks.py --quick
 
-# 3. Run 25 Comparative Boundary Validations
-python validate_calibra.py
+# 3. Run 34 Golden Test Cases (Independent Differential Oracle)
+python backend/tests/golden_test_suite.py
 
-# 4. Run Pytest Suite (Gravity, Context, & Coverage Gate)
-cmd /c "set PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 && python -m pytest tests/test_gravity_and_context.py tests/test_report_consistency.py"
+# 4. Run 25 Comparative Boundary Validations
+python backend/validate_calibra.py
+
+# 5. Run Pytest Suite (Gravity, Context, & Coverage Gate)
+cmd /c "cd backend && set PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 && python -m pytest tests/test_gravity_and_context.py tests/test_report_consistency.py"
 ```
 
 ---
@@ -168,14 +171,15 @@ Empirical performance benchmark results measured on CALIBRA's deterministic comp
 
 | Subsystem / Metrological Engine | Throughput | Mean Latency | 99th Percentile (P99) | Precision / Standard |
 | :--- | :--- | :--- | :--- | :--- |
-| **Somigliana WGS84 Gravity Calculation** | **381,357 ops/s** | **2.50 µs** | **6.10 µs** | International Gravity Formula (1980) |
-| **Decimal Metrology Core ($P, E_c, \text{MPE}$)** | **578,517 eval/s** | **1.60 µs** | **2.50 µs** | Arbitrary-Precision Decimal (34 digits) |
-| **Clause 3.9.2 Location Transferability** | **132,906 eval/s** | **7.39 µs** | **12.90 µs** | OIML R76-1:2006 Clause 3.9.2 |
-| **Dynamic OIML Test Plan Compiler** | **285,608 plans/s**| **0.003 ms** | **0.005 ms** | Classes I, II, III, IIII Dynamic Catalog |
-| **Coverage Gate Verification** | **245,877 checks/s**| **3.95 µs** | **5.30 µs** | Multi-Point Mandatory Distribution Gate |
-| **Cryptographic SHA-256 Report Hashing** | **11,451 rep/s (1.4 GB/s)** | **87.17 µs**| **120.5 µs** | FIPS 180-4 SHA-256 Tamper Protection |
+| **Somigliana WGS84 Gravity Calculation** | **~295,000 ops/s** | **3.23 µs** | **6.60 µs** | International Gravity Formula (1980) |
+| **Decimal Metrology Core ($P, E_c, \text{MPE}$)** | **~422,000 eval/s** | **2.20 µs** | **5.00 µs** | Arbitrary-Precision Decimal (34 digits) |
+| **Clause 3.9.2 Location Transferability** | **~72,000 eval/s** | **13.69 µs** | **65.00 µs** | OIML R76-1:2006 Clause 3.9.2 |
+| **Dynamic OIML Test Plan Compiler** | **~195,000 plans/s**| **0.005 ms** | **0.011 ms** | Classes I, II, III, IIII Dynamic Catalog |
+| **Coverage Gate Verification** | **~185,000 checks/s**| **5.13 µs** | **11.90 µs** | Multi-Point Mandatory Distribution Gate |
+| **Cryptographic SHA-256 Report Hashing** | **~8,000 rep/s (988 MB/s)** | **124.80 µs**| **261.50 µs** | FIPS 180-4 SHA-256 Tamper Protection |
 
-*All benchmarks executed over 100,000 iterations per test; see [`backend/tests/benchmark_performance.py`](file:///c:/Users/tanish/OneDrive/Tài liệu/Desktop/oiml/backend/tests/benchmark_performance.py).*
+👉 **Direct Benchmark Directory Link**: [**`benchmarks/`**](file:///c:/Users/tanish/OneDrive/Tài liệu/Desktop/oiml/benchmarks/README.md) (`https://github.com/Tanish9022/CALIBRA/tree/main/benchmarks`)  
+*Includes execution harness, automated percentile latency breakdowns, and machine-readable JSON metrics.*
 
 ---
 
